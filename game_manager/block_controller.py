@@ -26,6 +26,14 @@ class Block_Controller(object):
 
         t1 = datetime.now()
 
+        #
+        # Challenge Flag Setting
+        #   FourLineStrategy
+        #       True  : Try deleting four lines
+        #       False : Normal Mode
+        #
+        FourLineStrategy = False
+
         # print GameStatus
         print("=================================================>")
         pprint.pprint(GameStatus, width = 61, compact = True)
@@ -33,6 +41,7 @@ class Block_Controller(object):
         # get data from GameStatus
         # current shape info
         CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"]
+        CurrentShapeIndex = GameStatus["block_info"]["currentShape"]["index"]
         self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"]
         # next shape info
         NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"]
@@ -47,6 +56,10 @@ class Block_Controller(object):
         # search best nextMove -->
         strategy = None
         LatestEvalValue = -100000
+        # number of holes before putting tetrimino
+        RetArray = self.calcEvaluationValueSample(self.board_backboard, 0)
+        Holes_wo_NewTetrimino = RetArray[1]
+
         # search with current block Shape
         for direction0 in CurrentShapeDirectionRange:
             # search with x range
@@ -56,8 +69,13 @@ class Block_Controller(object):
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
 
                 # evaluate board
-                EvalValue = self.calcEvaluationValueSample(board)
-                # update best move
+                RetArray = self.calcEvaluationValueSample(board, Holes_wo_NewTetrimino)
+                EvalValue = RetArray[0]
+                print(x0, x0Max-1, CurrentShapeIndex, direction0)
+                if FourLineStrategy and x0 == (x0Max-1) and not (CurrentShapeIndex == 1 and direction0 == 0):
+                    EvalValue = EvalValue - 100
+                    print ("Hello")
+                    print(EvalValue)
                 if EvalValue > LatestEvalValue:
                     strategy = (direction0, x0, 1, 1)
                     LatestEvalValue = EvalValue
@@ -137,7 +155,7 @@ class Block_Controller(object):
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
-    def calcEvaluationValueSample(self, board):
+    def calcEvaluationValueSample(self, board, holesWOtetrimino):
         #
         # sample function of evaluate board.
         #
@@ -219,19 +237,30 @@ class Block_Controller(object):
 
 
         # calc Evaluation Value
+        holesDiff_w_wo_tetrimino = nHoles - holesWOtetrimino
+
         score = 0
         score = score + fullLines * 10.0           # try to delete line 
-        score = score - nHoles * 1.0               # try not to make hole
-        score = score - nIsolatedBlocks * 8.0      # try not to make isolated block
-        score = score - absDy * 1.0                # try to put block smoothly
+        score = score - nHoles * 3.0               # try not to make hole
+        score = score - nIsolatedBlocks * 3.0      # try not to make isolated block
+        score = score - absDy * 2.0                # try to put block smoothly
+        score = score - holesDiff_w_wo_tetrimino * 20.0 # try 
+
+        #score = 0
+        #score = score + fullLines * 10.0           # try to delete line 
+        #score = score - nHoles * 1.0               # try not to make hole
+        #score = score - nIsolatedBlocks * 8.0      # try not to make isolated block
+        #score = score - absDy * 1.0                # try to put block smoothly
+        #score = score - holesDiff_w_wo_tetrimino * 20.0
         #score = score - maxDy * 0.3                # maxDy
         #score = score - maxHeight * 5              # maxHeight
         #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
 
         # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
-        print (score)
-        return score
+        print(score, fullLines, nHoles, nIsolatedBlocks, absDy, BlockMaxY)
+        # print (score)
+        return score, nHoles
 
 
 BLOCK_CONTROLLER = Block_Controller()
