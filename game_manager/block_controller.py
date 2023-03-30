@@ -214,7 +214,7 @@ class Block_Controller(object):
             nextMove["strategy"]["direction"] = 0
             nextMove["strategy"]["x"] = 0
             nextMove["strategy"]["y_operation"] = 0
-            nextMove["strategy"]["y_moveblocknum"] = 0
+            nextMove["strategy"]["y_moveblocknum"] = 1
             nextMove["strategy"]["use_hold_function"] = switchHold
 
         print("===", datetime.now() - t1)
